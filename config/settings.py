@@ -106,6 +106,10 @@ def _removed_env_var_message(model_config: Mapping[str, Any]) -> str | None:
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
+    # ==================== OpenAI Config ====================
+    openai_api_key: str = Field(default="", validation_alias="OPENAI_API_KEY")
+    openai_base_url: str = Field(default="", validation_alias="OPENAI_BASE_URL")
+
     # ==================== OpenRouter Config ====================
     open_router_api_key: str = Field(default="", validation_alias="OPENROUTER_API_KEY")
 
@@ -157,6 +161,7 @@ class Settings(BaseSettings):
     model_haiku: str | None = Field(default=None, validation_alias="MODEL_HAIKU")
 
     # ==================== Per-Provider Proxy ====================
+    openai_proxy: str = Field(default="", validation_alias="OPENAI_PROXY")
     nvidia_nim_proxy: str = Field(default="", validation_alias="NVIDIA_NIM_PROXY")
     open_router_proxy: str = Field(default="", validation_alias="OPENROUTER_PROXY")
     lmstudio_proxy: str = Field(default="", validation_alias="LMSTUDIO_PROXY")
