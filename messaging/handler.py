@@ -7,6 +7,7 @@ Uses tree-based queuing for message ordering.
 """
 
 import asyncio
+import re
 
 from loguru import logger
 
@@ -355,7 +356,7 @@ class ClaudeMessageHandler:
             transcript=transcript,
             render_ctx=render_ctx,
             node_id=node_id,
-            chat_id=chat_id,
+            chat_id=incoming.chat_id,
             status_msg_id=status_msg_id,
             debug_platform_edits=self._debug_platform_edits,
             log_messaging_error_details=self._log_messaging_error_details,
@@ -446,6 +447,50 @@ class ClaudeMessageHandler:
                         propagate_error_to_children=self._propagate_error_to_children,
                         log_messaging_error_details=self._log_messaging_error_details,
                     )
+
+                    if parsed.get("type") == "error":
+                        error_msg = parsed.get("message", "")
+                        if (
+                            isinstance(error_msg, str)
+                            and "Provider request timed out" in error_msg
+                        ):
+                            req_id_match = re.search(r"request_id=([^)]+)", error_msg)
+                            req_id_text = (
+                                f" con il riferimento alla request_id={req_id_match.group(1)}"
+                                if req_id_match
+                                else ""
+                            )
+                            auto_text = f"continua{req_id_text}"
+
+                            async def trigger_auto_resume(
+                                bound_auto_text: str = auto_text,
+                            ) -> None:
+                                # Ensure current node has finished error propagation
+                                await asyncio.sleep(1.0)
+                                try:
+                                    # Send the auto-continue message to the platform so it is visible to the user
+                                    sent_msg_id = await self.platform.queue_send_message(
+                                        chat_id=incoming.chat_id,
+                                        text=bound_auto_text,
+                                        reply_to=status_msg_id,
+                                        fire_and_forget=False,
+                                        message_thread_id=incoming.message_thread_id,
+                                    )
+                                    if sent_msg_id:
+                                        auto_msg = IncomingMessage(
+                                            text=bound_auto_text,
+                                            chat_id=incoming.chat_id,
+                                            user_id=incoming.user_id,
+                                            message_id=sent_msg_id,
+                                            platform=incoming.platform,
+                                            reply_to_message_id=status_msg_id,
+                                            message_thread_id=incoming.message_thread_id,
+                                        )
+                                        await self.handle_message(auto_msg)
+                                except Exception as e:
+                                    logger.error(f"Failed to auto-resume: {e}")
+
+                            self.platform.fire_and_forget(trigger_auto_resume())
 
         except asyncio.CancelledError:
             logger.warning(f"HANDLER: Task cancelled for node {node_id}")
