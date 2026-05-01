@@ -17,6 +17,7 @@ NVIDIA_NIM_DEFAULT_BASE = "https://integrate.api.nvidia.com/v1"
 DEEPSEEK_ANTHROPIC_DEFAULT_BASE = "https://api.deepseek.com/anthropic"
 # Historical export name: DeepSeek upstream is the native Anthropic path above.
 DEEPSEEK_DEFAULT_BASE = DEEPSEEK_ANTHROPIC_DEFAULT_BASE
+OPENAI_DEFAULT_BASE = "https://api.openai.com/v1"
 OPENROUTER_DEFAULT_BASE = "https://openrouter.ai/api/v1"
 LMSTUDIO_DEFAULT_BASE = "http://localhost:1234/v1"
 LLAMACPP_DEFAULT_BASE = "http://localhost:8080/v1"
@@ -40,6 +41,17 @@ class ProviderDescriptor:
 
 
 PROVIDER_CATALOG: dict[str, ProviderDescriptor] = {
+    "openai": ProviderDescriptor(
+        provider_id="openai",
+        transport_type="openai_chat",
+        credential_env="OPENAI_API_KEY",
+        credential_url="https://platform.openai.com/api-keys",
+        credential_attr="openai_api_key",
+        default_base_url=OPENAI_DEFAULT_BASE,
+        base_url_attr="openai_base_url",
+        proxy_attr="openai_proxy",
+        capabilities=("chat", "streaming", "tools", "rate_limit"),
+    ),
     "nvidia_nim": ProviderDescriptor(
         provider_id="nvidia_nim",
         transport_type="openai_chat",
