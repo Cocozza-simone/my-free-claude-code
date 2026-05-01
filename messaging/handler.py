@@ -450,9 +450,10 @@ class ClaudeMessageHandler:
 
                     if parsed.get("type") == "error":
                         error_msg = parsed.get("message", "")
-                        if (
-                            isinstance(error_msg, str)
-                            and "Provider request timed out" in error_msg
+                        if isinstance(error_msg, str) and (
+                            "Provider request timed out" in error_msg
+                            or "peer closed connection without sending complete message body (incomplete chunked read)"
+                            in error_msg
                         ):
                             req_id_match = re.search(r"request_id=([^)]+)", error_msg)
                             req_id_text = (
